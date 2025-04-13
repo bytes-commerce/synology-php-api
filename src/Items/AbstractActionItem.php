@@ -27,6 +27,11 @@ abstract class AbstractActionItem implements \JsonSerializable, ActionItemInterf
         return static::IS_MULTIPART_FORM;
     }
 
+    public function isDownloadAction(): bool
+    {
+        return false;
+    }
+
     public function parameterOrderValidator(array $params): bool
     {
         return true;

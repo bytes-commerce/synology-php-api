@@ -10,13 +10,16 @@ use BytesCommerce\SynologyApi\Factory\EndpointDefinitionFactory;
 use BytesCommerce\SynologyApi\Factory\RequestManagerFactory;
 use BytesCommerce\SynologyApi\Items\ActionItemInterface;
 use BytesCommerce\SynologyApi\Items\CreateItem;
+use BytesCommerce\SynologyApi\Items\DownloadItem;
 use BytesCommerce\SynologyApi\Items\GetInfoItem;
 use BytesCommerce\SynologyApi\Items\GetItem;
+use BytesCommerce\SynologyApi\Items\GetThumbItem;
 use BytesCommerce\SynologyApi\Items\ListItem;
 use BytesCommerce\SynologyApi\Items\ListShareItem;
 use BytesCommerce\SynologyApi\Items\LoginItem;
 use BytesCommerce\SynologyApi\Items\LogoutItem;
 use BytesCommerce\SynologyApi\Items\QueryItem;
+use BytesCommerce\SynologyApi\Items\RenameItem;
 use BytesCommerce\SynologyApi\Items\StartItem;
 use BytesCommerce\SynologyApi\Items\StatusItem;
 use BytesCommerce\SynologyApi\Items\StopItem;
@@ -44,6 +47,9 @@ return static function (ContainerConfigurator $container) {
     $services->set(StartItem::class);
     $services->set(StatusItem::class);
     $services->set(StopItem::class);
+    $services->set(DownloadItem::class);
+    $services->set(RenameItem::class);
+    $services->set(GetThumbItem::class);
 
     $services->set(ApiActionItemFactory::class);
     $services->set(EndpointProvider::class);

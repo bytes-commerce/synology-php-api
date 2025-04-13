@@ -56,8 +56,8 @@ final class RequestManager
         $webApi = $this->getApiActionItem('SYNO.FileStation.CreateFolder', CreateItem::class);
 
         return $this->request($webApi, [
-            'folder_path' => json_encode($sharePaths),
-            'name' => json_encode($filePaths),
+            'folder_path' => json_encode($sharePaths, \JSON_UNESCAPED_UNICODE),
+            'name' => json_encode($filePaths, \JSON_UNESCAPED_UNICODE),
             'force_parent' => $recursive,
             'additional' => json_encode([
                 'size',
@@ -126,7 +126,7 @@ final class RequestManager
 
         return $this->request($webApi, [
             'path' => $target,
-            'name' => json_encode($newFilename),
+            'name' => json_encode($newFilename, \JSON_UNESCAPED_UNICODE),
             'additional' => json_encode([
                 'real_path',
                 'size',
@@ -144,7 +144,7 @@ final class RequestManager
             $webApi = $this->getApiActionItem('SYNO.FileStation.Download', DownloadItem::class);
 
             return $this->request($webApi, [
-                'path' => json_encode($filePaths),
+                'path' => json_encode($filePaths, \JSON_UNESCAPED_UNICODE),
                 'mode' => sprintf('"%s"', $mode),
             ]);
         });
@@ -175,7 +175,7 @@ final class RequestManager
             $webApi = $this->getApiActionItem('SYNO.FileStation.List', GetInfoItem::class);
 
             return $this->request($webApi, [
-                'path' => json_encode($paths),
+                'path' => json_encode($paths, \JSON_UNESCAPED_UNICODE),
                 'additional' => json_encode([
                     'size',
                     'time',
@@ -192,7 +192,7 @@ final class RequestManager
         $webApi = $this->getApiActionItem('SYNO.FileStation.Delete', StartItem::class);
 
         $startResponse = $this->request($webApi, [
-            'path' => json_encode($paths),
+            'path' => json_encode($paths, \JSON_UNESCAPED_UNICODE),
             'recursive' => $recursive,
         ]);
 

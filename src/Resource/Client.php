@@ -28,7 +28,7 @@ final class Client
     public function __destruct()
     {
         if ($this->sid !== null) {
-            $this->client->request(Request::METHOD_GET, sprintf('%s/webapi/Auth.cgi?api=SYNO.API.Auth&method=logout&version=1&_sid=%s', $this->targetUrl, $this->sid));
+            //$this->client->request(Request::METHOD_GET, sprintf('%s/webapi/Auth.cgi?api=SYNO.API.Auth&method=logout&version=1&_sid=%s', $this->targetUrl, $this->sid));
             $this->resetTokens();
         }
     }
@@ -40,8 +40,6 @@ final class Client
         $method = Request::METHOD_GET;
         $requestParameter = array_filter([
             'headers' => [
-                'Accept-Encoding' => 'gzip, deflate, br',
-                'Accept' => 'application/json',
                 'Referer' => $this->referer,
                 'Cookie' => sprintf('id=%s', $this->sid),
             ],
@@ -70,10 +68,18 @@ final class Client
 
         $response = $this->client->request(strtoupper($method), $url, $requestParameter);
         if ($response->getStatusCode() !== 200) {
-            throw new \RuntimeException(sprintf('Request failed with status code %d', $response->getStatusCode()));
+            throw new \RuntimeException(sprintf('Request failed with HTTP status code %d', $response->getStatusCode()));
         }
 
-        $data = json_decode($response->getContent(), true, 512, \JSON_THROW_ON_ERROR);
+        if ($actionItem->isDownloadAction()) {
+            $info = $response->getInfo();
+            $data = [
+                'file' => $response->getContent(),
+            ];
+        } else {
+            $data = json_decode($response->getContent(), true, 512, \JSON_THROW_ON_ERROR);
+        }
+
         if (isset($data['success']) && !$data['success']) {
             $errorCode = (int) $data['error']['code'];
 

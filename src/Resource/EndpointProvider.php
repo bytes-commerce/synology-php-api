@@ -14,28 +14,45 @@ final class EndpointProvider
 
     public function __construct(
     ) {
-        $this->adapter = new FilesystemAdapter();
+        $this->adapter = new FilesystemAdapter(
+            namespace: 'bc.synology_api',
+            defaultLifetime: 0,
+        );
     }
 
     public function getEndpoints(string $targetUrl): array
     {
-        return $this->adapter->get('bc.synology_api.endpoints', function (ItemInterface $item) use ($targetUrl): array {
+        return $this->adapter->get('endpoints', function (ItemInterface $item) use ($targetUrl): array {
             $item->expiresAfter(7200);
 
-            $ch = curl_init();
-            $url = sprintf('%s/webapi/query.cgi?api=SYNO.API.Info&version=1&method=query', $targetUrl);
-            curl_setopt($ch, \CURLOPT_URL, $url);
+            $result = [];
 
-            $referer = $this->getReferer($targetUrl);
+            $i = 0;
+            while (true) {
+                if (++$i > 10) {
+                    throw new \RuntimeException('Unable to get endpoints from Synology API');
+                }
 
-            curl_setopt($ch, \CURLOPT_REFERER, $referer);
-            curl_setopt($ch, \CURLOPT_RETURNTRANSFER, true);
-            $response = curl_exec($ch);
-            Assert::same(0, curl_errno($ch));
-            curl_close($ch);
-            Assert::string($response);
+                $ch = curl_init();
+                $url = sprintf('%s/webapi/query.cgi?api=SYNO.API.Info&version=1&method=query', $targetUrl);
+                curl_setopt($ch, \CURLOPT_URL, $url);
 
-            return json_decode($response, true);
+                $referer = $this->getReferer($targetUrl);
+
+                curl_setopt($ch, \CURLOPT_REFERER, $referer);
+                curl_setopt($ch, \CURLOPT_RETURNTRANSFER, true);
+                $response = curl_exec($ch);
+                Assert::same(0, curl_errno($ch));
+                curl_close($ch);
+                Assert::string($response);
+
+                $result = json_decode($response, true);
+                if ($result !== null) {
+                    break;
+                }
+            }
+
+            return $result;
         });
     }
 

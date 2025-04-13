@@ -4,15 +4,20 @@ declare(strict_types=1);
 
 namespace BytesCommerce\SynologyApi\Manager;
 
+use BytesCommerce\SynologyApi\Enum\ThumbnailSizeEnum;
 use BytesCommerce\SynologyApi\Exceptions\NoConnectionException;
 use BytesCommerce\SynologyApi\Exceptions\UserAccessException;
 use BytesCommerce\SynologyApi\Factory\EndpointDefinitionFactory;
 use BytesCommerce\SynologyApi\Items\AbstractActionItem;
 use BytesCommerce\SynologyApi\Items\CreateItem;
+use BytesCommerce\SynologyApi\Items\DownloadItem;
+use BytesCommerce\SynologyApi\Items\GetInfoItem;
+use BytesCommerce\SynologyApi\Items\GetThumbItem;
 use BytesCommerce\SynologyApi\Items\ListItem;
 use BytesCommerce\SynologyApi\Items\ListShareItem;
 use BytesCommerce\SynologyApi\Items\LoginItem;
 use BytesCommerce\SynologyApi\Items\QueryItem;
+use BytesCommerce\SynologyApi\Items\RenameItem;
 use BytesCommerce\SynologyApi\Items\StartItem;
 use BytesCommerce\SynologyApi\Items\StatusItem;
 use BytesCommerce\SynologyApi\Items\UploadItem;
@@ -21,17 +26,23 @@ use BytesCommerce\SynologyApi\Resource\EndpointProvider;
 use Doctrine\Common\Collections\ArrayCollection;
 use RuntimeException;
 use SensitiveParameter;
+use Symfony\Component\Cache\Adapter\FilesystemAdapter;
+use Symfony\Component\HttpFoundation\File\UploadedFile;
+use Symfony\Contracts\Cache\ItemInterface;
 use Throwable;
 use Webmozart\Assert\Assert;
 
 final class RequestManager
 {
+    private const CACHE_DURATION = 86400;
+
     private array $webApiInformation = [];
 
     public function __construct(
         private readonly Client $client,
         private readonly EndpointProvider $endpointProvider,
         private readonly EndpointDefinitionFactory $definitionFactory,
+        private readonly FilesystemAdapter $filesystemAdapter,
         private readonly string $targetUrl,
         private readonly string $username,
         #[SensitiveParameter]
@@ -49,8 +60,8 @@ final class RequestManager
             'name' => json_encode($filePaths),
             'force_parent' => $recursive,
             'additional' => json_encode([
-                'real_path',
                 'size',
+                'time',
                 'type',
             ]),
         ]);
@@ -76,29 +87,102 @@ final class RequestManager
 
         return $this->request($webApi, [
             'additional' => json_encode([
-                'real_path',
                 'size',
+                'time',
                 'type',
-                'volume_status',
             ]),
         ]);
     }
 
-    public function upload(string $fileTargetPath, string $filePath): ArrayCollection
+    public function upload(string $fileTargetPath, string|UploadedFile $filePath, ?string $fileName = null): ArrayCollection
     {
         $webApi = $this->getApiActionItem('SYNO.FileStation.Upload', UploadItem::class);
 
-        return $this->request($webApi, array_reverse([
+        $uploadResponse = $this->request($webApi, array_reverse([
             'path' => $fileTargetPath,
             'create_parents' => 'true',
             'overwrite' => 'overwrite',
+            'additional' => json_encode([
+                'size',
+                'time',
+                'type',
+            ]),
+            'filename' => (string) $filePath,
+        ]));
+
+        if ($filePath instanceof UploadedFile) {
+            $this->rename(
+                sprintf('%s/%s', $fileTargetPath, $filePath->getFilename()),
+                $fileName === null ? $filePath->getClientOriginalName() : $fileName,
+            );
+        }
+
+        return $uploadResponse;
+    }
+
+    public function rename(string $target, string $newFilename): ArrayCollection
+    {
+        $webApi = $this->getApiActionItem('SYNO.FileStation.Rename', RenameItem::class);
+
+        return $this->request($webApi, [
+            'path' => $target,
+            'name' => json_encode($newFilename),
             'additional' => json_encode([
                 'real_path',
                 'size',
                 'type',
             ]),
-            'filename' => $filePath,
-        ]));
+        ]);
+    }
+
+    public function download(array $filePaths, string $mode, int $cacheDuration = self::CACHE_DURATION): ArrayCollection
+    {
+        $fileHash = hash('sha256', implode(',', $filePaths));
+
+        return $this->filesystemAdapter->get('bc.synology_download.' . $fileHash, function (ItemInterface $item) use ($filePaths, $mode, $cacheDuration) {
+            $item->expiresAfter($cacheDuration);
+            $webApi = $this->getApiActionItem('SYNO.FileStation.Download', DownloadItem::class);
+
+            return $this->request($webApi, [
+                'path' => json_encode($filePaths),
+                'mode' => sprintf('"%s"', $mode),
+            ]);
+        });
+    }
+
+    public function thumbnail(string $filePath, ThumbnailSizeEnum $thumbnailSize = ThumbnailSizeEnum::SMALL, int $cacheDuration = self::CACHE_DURATION): ArrayCollection
+    {
+        $fileHash = hash('sha256', sprintf('%s-%s', $filePath, $thumbnailSize->value));
+
+        return $this->filesystemAdapter->get('bc.synology_thumb.' . $fileHash, function (ItemInterface $item) use ($filePath, $thumbnailSize, $cacheDuration) {
+            $item->expiresAfter($cacheDuration);
+            $webApi = $this->getApiActionItem('SYNO.FileStation.Thumb', GetThumbItem::class);
+
+            return $this->request($webApi, [
+                'path' => sprintf('"%s"', $filePath),
+                'size' => $thumbnailSize->value,
+                'rotate' => 0,
+            ]);
+        });
+    }
+
+    public function fileInfo(array $paths, int $cacheDuration = self::CACHE_DURATION): ArrayCollection
+    {
+        $fileHash = hash('sha256', implode(',', $paths));
+
+        return $this->filesystemAdapter->get('bc.synology_getinfo.' . $fileHash, function (ItemInterface $item) use ($paths, $cacheDuration) {
+            $item->expiresAfter($cacheDuration);
+            $webApi = $this->getApiActionItem('SYNO.FileStation.List', GetInfoItem::class);
+
+            return $this->request($webApi, [
+                'path' => json_encode($paths),
+                'additional' => json_encode([
+                    'size',
+                    'time',
+                    'type',
+                ]),
+            ]);
+        });
     }
 
     public function delete(array $paths, bool $recursive = false): ArrayCollection
@@ -204,21 +288,25 @@ final class RequestManager
 
     private function login(): void
     {
-        $loginItem = $this->getApiActionItem('SYNO.API.Auth', LoginItem::class);
-        $result = $this->client->request($loginItem, array_filter([
-            'account' => $this->username,
-            'passwd' => $this->password,
-            'format' => 'sid',
-            'enable_syno_token' => $loginItem->getVersion() >= 6 ? 'yes' : null,
-            'session' => 'FileStation',
-        ]));
+        $tokens = $this->filesystemAdapter->get('bc.synology_api.endpoints', function (ItemInterface $item): ArrayCollection {
+            $item->expiresAfter(600);
+            $loginItem = $this->getApiActionItem('SYNO.API.Auth', LoginItem::class);
 
-        if ($result->containsKey('sid')) {
-            $this->client->setSessionId($result->get('sid'));
+            return $this->client->request($loginItem, array_filter([
+                'account' => $this->username,
+                'passwd' => $this->password,
+                'format' => 'sid',
+                'enable_syno_token' => $loginItem->getVersion() >= 6 ? 'yes' : null,
+                'session' => 'FileStation',
+            ]));
+        });
+
+        if ($tokens->containsKey('sid')) {
+            $this->client->setSessionId($tokens->get('sid'));
         }
 
-        if ($result->containsKey('synotoken')) {
-            $this->client->setSynologyToken($result->get('synotoken'));
+        if ($tokens->containsKey('synotoken')) {
+            $this->client->setSynologyToken($tokens->get('synotoken'));
         }
     }
 

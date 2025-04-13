@@ -7,6 +7,7 @@ namespace BytesCommerce\SynologyApi\Factory;
 use BytesCommerce\SynologyApi\Manager\RequestManager;
 use BytesCommerce\SynologyApi\Resource\EndpointProvider;
 use SensitiveParameter;
+use Symfony\Component\Cache\Adapter\FilesystemAdapter;
 
 final readonly class RequestManagerFactory
 {
@@ -24,9 +25,13 @@ final readonly class RequestManagerFactory
         string $password,
     ): RequestManager {
         return new RequestManager(
-            $this->clientFactory->create($targetUrl),
+            $this->clientFactory->create(rtrim($targetUrl, '/')),
             $this->endpointProvider,
             $this->definitionFactory,
+            new FilesystemAdapter(
+                namespace: 'bc.synology_api',
+                defaultLifetime: 0,
+            ),
             $targetUrl,
             $userName,
             $password,

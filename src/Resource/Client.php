@@ -71,14 +71,9 @@ final class Client
             throw new \RuntimeException(sprintf('Request failed with HTTP status code %d', $response->getStatusCode()));
         }
 
-        if ($actionItem->isDownloadAction()) {
-            $info = $response->getInfo();
-            $data = [
-                'file' => $response->getContent(),
-            ];
-        } else {
-            $data = json_decode($response->getContent(), true, 512, \JSON_THROW_ON_ERROR);
-        }
+        $data = $actionItem->isDownloadAction()
+            ? ['file' => $response->getContent()]
+            : json_decode($response->getContent(), true, 512, \JSON_THROW_ON_ERROR);
 
         if (isset($data['success']) && !$data['success']) {
             $errorCode = (int) $data['error']['code'];

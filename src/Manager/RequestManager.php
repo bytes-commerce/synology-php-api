@@ -18,6 +18,7 @@ use BytesCommerce\SynologyApi\Items\ListShareItem;
 use BytesCommerce\SynologyApi\Items\LoginItem;
 use BytesCommerce\SynologyApi\Items\QueryItem;
 use BytesCommerce\SynologyApi\Items\RenameItem;
+use BytesCommerce\SynologyApi\Items\StartCopyMoveItem;
 use BytesCommerce\SynologyApi\Items\StartItem;
 use BytesCommerce\SynologyApi\Items\StatusItem;
 use BytesCommerce\SynologyApi\Items\UploadItem;
@@ -175,7 +176,7 @@ final class RequestManager
     {
         Assert::allString($pathsToMove);
         Assert::allNotEmpty($pathsToMove);
-        $webApi = $this->getApiActionItem('SYNO.FileStation.CopyMove', StartItem::class);
+        $webApi = $this->getApiActionItem('SYNO.FileStation.CopyMove', StartCopyMoveItem::class);
 
         return $this->request($webApi, [
             'path' => json_encode($pathsToMove, \JSON_UNESCAPED_UNICODE),

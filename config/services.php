@@ -20,6 +20,7 @@ use BytesCommerce\SynologyApi\Items\LoginItem;
 use BytesCommerce\SynologyApi\Items\LogoutItem;
 use BytesCommerce\SynologyApi\Items\QueryItem;
 use BytesCommerce\SynologyApi\Items\RenameItem;
+use BytesCommerce\SynologyApi\Items\StartCopyMoveItem;
 use BytesCommerce\SynologyApi\Items\StartItem;
 use BytesCommerce\SynologyApi\Items\StatusItem;
 use BytesCommerce\SynologyApi\Items\StopItem;
@@ -45,6 +46,7 @@ return static function (ContainerConfigurator $container) {
     $services->set(TokenItem::class);
     $services->set(UploadItem::class);
     $services->set(StartItem::class);
+    $services->set(StartCopyMoveItem::class);
     $services->set(StatusItem::class);
     $services->set(StopItem::class);
     $services->set(DownloadItem::class);

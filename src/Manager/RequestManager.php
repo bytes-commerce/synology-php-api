@@ -153,8 +153,13 @@ final class RequestManager
     public function thumbnail(string $filePath, ThumbnailSizeEnum $thumbnailSize = ThumbnailSizeEnum::SMALL, int $cacheDuration = self::CACHE_DURATION): ArrayCollection
     {
         $fileHash = hash('sha256', sprintf('%s-%s', $filePath, $thumbnailSize->value));
+        $cacheKey = 'bc.synology_thumb.' . $fileHash;
 
-        return $this->filesystemAdapter->get('bc.synology_thumb.' . $fileHash, function (ItemInterface $item) use ($filePath, $thumbnailSize, $cacheDuration) {
+        if ($cacheDuration === 0) {
+            $this->filesystemAdapter->delete($cacheKey);
+        }
+
+        return $this->filesystemAdapter->get($cacheKey, function (ItemInterface $item) use ($filePath, $thumbnailSize, $cacheDuration) {
             $item->expiresAfter($cacheDuration);
             $webApi = $this->getApiActionItem('SYNO.FileStation.Thumb', GetThumbItem::class);
 
@@ -166,11 +171,29 @@ final class RequestManager
         });
     }
 
+    public function copyMove(array $pathsToMove, string $targetDirectory, bool $isCopy = false): ArrayCollection
+    {
+        Assert::allString($pathsToMove);
+        Assert::allNotEmpty($pathsToMove);
+        $webApi = $this->getApiActionItem('SYNO.FileStation.CopyMove', StartItem::class);
+
+        return $this->request($webApi, [
+            'path' => json_encode($pathsToMove, \JSON_UNESCAPED_UNICODE),
+            'dest_folder' => sprintf('"%s"', $targetDirectory),
+            'remove_src' => $isCopy ? 'false' : 'true',
+        ]);
+    }
+
     public function fileInfo(array $paths, int $cacheDuration = self::CACHE_DURATION): ArrayCollection
     {
         $fileHash = hash('sha256', implode(',', $paths));
+        $cacheKey = 'bc.synology_getinfo.' . $fileHash;
 
-        return $this->filesystemAdapter->get('bc.synology_getinfo.' . $fileHash, function (ItemInterface $item) use ($paths, $cacheDuration) {
+        if ($cacheDuration === 0) {
+            $this->filesystemAdapter->delete($cacheKey);
+        }
+
+        return $this->filesystemAdapter->get($cacheKey, function (ItemInterface $item) use ($paths, $cacheDuration) {
             $item->expiresAfter($cacheDuration);
             $webApi = $this->getApiActionItem('SYNO.FileStation.List', GetInfoItem::class);
 

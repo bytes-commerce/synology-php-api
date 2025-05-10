@@ -88,9 +88,13 @@ final class RequestManager
 
         return $this->request($webApi, [
             'additional' => json_encode([
+                'real_path',
                 'size',
                 'time',
                 'type',
+                'perm',
+                'mount_point_type',
+                'volume_status',
             ]),
         ]);
     }
@@ -180,7 +184,7 @@ final class RequestManager
 
         return $this->request($webApi, [
             'path' => json_encode($pathsToMove, \JSON_UNESCAPED_UNICODE),
-            'dest_folder_path' => sprintf('"%s"', $targetDirectory),
+            'dest_folder' => sprintf('"%s"', $targetDirectory),
             'remove_src' => $isCopy ? 'false' : 'true',
         ]);
     }

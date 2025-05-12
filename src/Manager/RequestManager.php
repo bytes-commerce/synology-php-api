@@ -184,7 +184,7 @@ final class RequestManager
 
         return $this->request($webApi, [
             'path' => json_encode($pathsToMove, \JSON_UNESCAPED_UNICODE),
-            'dest_folder' => sprintf('"%s"', $targetDirectory),
+            'dest_folder_path' => sprintf('"%s"', $targetDirectory),
             'remove_src' => $isCopy ? 'false' : 'true',
         ]);
     }

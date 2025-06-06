@@ -158,7 +158,7 @@ final class RequestManager
     public function thumbnail(string $filePath, ThumbnailSizeEnum $thumbnailSize = ThumbnailSizeEnum::SMALL, int $cacheDuration = self::CACHE_DURATION): ArrayCollection
     {
         $fileHash = hash('sha256', sprintf('%s-%s', $filePath, $thumbnailSize->value));
-        $cacheKey = 'bc.synology_thumb.' . $fileHash;
+        $cacheKey = 'bc.synology_thumb.' . $fileHash . '. ' . $thumbnailSize->value;
 
         if ($cacheDuration === 0) {
             $this->filesystemAdapter->delete($cacheKey);

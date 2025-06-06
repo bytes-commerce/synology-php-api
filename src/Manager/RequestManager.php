@@ -116,10 +116,14 @@ final class RequestManager
         ]));
 
         if ($filePath instanceof UploadedFile) {
-            $this->rename(
-                sprintf('%s/%s', $fileTargetPath, $filePath->getFilename()),
-                $fileName === null ? $filePath->getClientOriginalName() : $fileName,
-            );
+            try {
+                $this->delete([sprintf('%s/%s', $fileTargetPath, $fileName === null ? $filePath->getClientOriginalName() : $fileName)]);
+            } finally {
+                $this->rename(
+                    sprintf('%s/%s', $fileTargetPath, $filePath->getFilename()),
+                    $fileName === null ? $filePath->getClientOriginalName() : $fileName,
+                );
+            }
         }
 
         return $uploadResponse;

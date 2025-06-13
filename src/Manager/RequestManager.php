@@ -223,6 +223,14 @@ final class RequestManager
         Assert::allNotEmpty($paths);
         $webApi = $this->getApiActionItem('SYNO.FileStation.Delete', StartItem::class);
 
+        foreach($paths as $path) {
+            $fileHash = hash('sha256', implode(',', [$path]));
+            $cacheKey = 'bc.synology_download.' . $fileHash;
+            if ($this->filesystemAdapter->hasItem($cacheKey)) {
+                $this->filesystemAdapter->delete($cacheKey);
+            }
+        }
+
         $startResponse = $this->request($webApi, [
             'path' => json_encode($paths, \JSON_UNESCAPED_UNICODE),
             'recursive' => $recursive,

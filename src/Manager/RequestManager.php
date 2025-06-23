@@ -117,12 +117,17 @@ final class RequestManager
 
         if ($filePath instanceof UploadedFile) {
             try {
-                $this->delete([sprintf('%s/%s', $fileTargetPath, $fileName === null ? $filePath->getClientOriginalName() : $fileName)]);
+                $targetPath = sprintf('%s/%s', $fileTargetPath, $fileName === null ? $filePath->getClientOriginalName() : $fileName);
+                $renamePath =  sprintf('%s/%s', $fileTargetPath, $filePath->getFilename());
+                $newFilename = $fileName === null
+                    ? $filePath->getClientOriginalName()
+                    : $fileName;
+
+                if ($targetPath !== $renamePath) {
+                    $this->delete([$targetPath]);
+                }
             } finally {
-                $this->rename(
-                    sprintf('%s/%s', $fileTargetPath, $filePath->getFilename()),
-                    $fileName === null ? $filePath->getClientOriginalName() : $fileName,
-                );
+                $this->rename($renamePath, $newFilename);
             }
         }
 

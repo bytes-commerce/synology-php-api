@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace BytesCommence\SynologyApi\Factory;
+namespace BytesCommerce\SynologyApi\Factory;
 
 use BytesCommerce\SynologyApi\Items\AbstractActionItem;
 

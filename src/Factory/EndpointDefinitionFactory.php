@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace BytesCommerce\SynologyApi\Factory;
 
-use BytesCommence\SynologyApi\Factory\ApiActionItemFactory;
+use BytesCommerce\SynologyApi\Factory\ApiActionItemFactory;
 use Doctrine\Common\Collections\ArrayCollection;
 use Symfony\Component\DependencyInjection\Argument\RewindableGenerator;
 use Webmozart\Assert\Assert;

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Symfony\Component\DependencyInjection\Loader\Configurator;
 
-use BytesCommence\SynologyApi\Factory\ApiActionItemFactory;
+use BytesCommerce\SynologyApi\Factory\ApiActionItemFactory;
 use BytesCommerce\SynologyApi\Factory\ClientFactory;
 use BytesCommerce\SynologyApi\Factory\EndpointDefinitionFactory;
 use BytesCommerce\SynologyApi\Factory\RequestManagerFactory;

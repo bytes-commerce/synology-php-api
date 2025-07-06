@@ -28,7 +28,6 @@ final class Client
     public function __destruct()
     {
         if ($this->sid !== null) {
-            //$this->client->request(Request::METHOD_GET, sprintf('%s/webapi/Auth.cgi?api=SYNO.API.Auth&method=logout&version=1&_sid=%s', $this->targetUrl, $this->sid));
             $this->resetTokens();
         }
     }
@@ -43,6 +42,8 @@ final class Client
                 'Referer' => $this->referer,
                 'Cookie' => sprintf('id=%s', $this->sid),
             ],
+            'timeout' => 10,
+            'max_duration' => 10,
         ]);
 
         if ($actionItem->isMultipartForm()) {
@@ -179,10 +180,10 @@ final class Client
         $availableKeys = $actionItem->getAvailableKeys();
         foreach (array_keys($parameters) as $key) {
             if (!in_array($key, $availableKeys, true) && (array_key_exists('optional', $availableKeys) && !in_array(
-                $key,
-                $availableKeys['optional'],
-                true,
-            ))) {
+                        $key,
+                        $availableKeys['optional'],
+                        true,
+                    ))) {
                 throw new \InvalidArgumentException(
                     sprintf(
                         'Invalid parameter "%s" for action item "%s", required keys are %s',

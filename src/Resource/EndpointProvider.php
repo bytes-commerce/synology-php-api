@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace BytesCommerce\SynologyApi\Resource;
 
+use BytesCommerce\SynologyApi\Exceptions\NoConnectionException;
 use Symfony\Component\Cache\Adapter\FilesystemAdapter;
 use Symfony\Contracts\Cache\ItemInterface;
 use Webmozart\Assert\Assert;
@@ -41,10 +42,17 @@ final class EndpointProvider
 
                 curl_setopt($ch, \CURLOPT_REFERER, $referer);
                 curl_setopt($ch, \CURLOPT_RETURNTRANSFER, true);
+                curl_setopt($ch, \CURLOPT_TIMEOUT, 10);
+                curl_setopt($ch, \CURLOPT_CONNECTTIMEOUT, 3);
+
                 $response = curl_exec($ch);
                 Assert::same(0, curl_errno($ch));
                 curl_close($ch);
-                Assert::string($response);
+                try {
+                    Assert::string($response);
+                } catch (Throwable $e) {
+                    throw new NoConnectionException();
+                }
 
                 $result = json_decode($response, true);
                 if ($result !== null) {

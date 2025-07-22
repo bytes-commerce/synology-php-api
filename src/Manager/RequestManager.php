@@ -24,6 +24,7 @@ use BytesCommerce\SynologyApi\Items\StatusItem;
 use BytesCommerce\SynologyApi\Items\UploadItem;
 use BytesCommerce\SynologyApi\Resource\Client;
 use BytesCommerce\SynologyApi\Resource\EndpointProvider;
+use BytesCommerce\SynologyApi\Resource\Url;
 use Doctrine\Common\Collections\ArrayCollection;
 use RuntimeException;
 use SensitiveParameter;
@@ -162,6 +163,34 @@ final class RequestManager
                 'mode' => sprintf('"%s"', $mode),
             ]);
         });
+    }
+
+    public function getDownloadUrl(array $filePaths, string $mode, bool $reLogin = false): Url
+    {
+        if (!$this->canConnect()) {
+            throw new NoConnectionException();
+        }
+
+        if (!$this->client->hasTokens() || $reLogin) {
+            $this->login();
+        }
+
+        try {
+            $webApi = $this->getApiActionItem('SYNO.FileStation.Download', DownloadItem::class);
+
+            return $this->client->getUrl($webApi, [
+                'path' => json_encode($filePaths, \JSON_UNESCAPED_UNICODE),
+                'mode' => sprintf('"%s"', $mode),
+            ]);
+        } catch (UserAccessException $e) {
+            if ($reLogin) {
+                throw $e;
+            }
+
+            $this->resetTokens();
+
+            return $this->getDownloadUrl($filePaths, $mode, true);
+        }
     }
 
     public function thumbnail(string $filePath, ThumbnailSizeEnum $thumbnailSize = ThumbnailSizeEnum::SMALL, int $cacheDuration = self::CACHE_DURATION): ArrayCollection

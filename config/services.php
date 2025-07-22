@@ -27,6 +27,7 @@ use BytesCommerce\SynologyApi\Items\StopItem;
 use BytesCommerce\SynologyApi\Items\TokenItem;
 use BytesCommerce\SynologyApi\Items\UploadItem;
 use BytesCommerce\SynologyApi\Resource\EndpointProvider;
+use BytesCommerce\SynologyApi\Resource\Url;
 
 return static function (ContainerConfigurator $container) {
     $services = $container->services()
@@ -53,6 +54,7 @@ return static function (ContainerConfigurator $container) {
     $services->set(RenameItem::class);
     $services->set(GetThumbItem::class);
 
+    $services->set(Url::class);
     $services->set(ApiActionItemFactory::class);
     $services->set(EndpointProvider::class);
     $services->set(EndpointDefinitionFactory::class)

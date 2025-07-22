@@ -34,40 +34,8 @@ final class Client
 
     public function request(AbstractActionItem $actionItem, array $parameters = []): ArrayCollection
     {
-        $url = $this->generateUrl($actionItem, $parameters);
-
-        $method = Request::METHOD_GET;
-        $requestParameter = array_filter([
-            'headers' => [
-                'Referer' => $this->referer,
-                'Cookie' => sprintf('id=%s', $this->sid),
-            ],
-            'timeout' => 10,
-            'max_duration' => 10,
-        ]);
-
-        if ($actionItem->isMultipartForm()) {
-            $method = Request::METHOD_POST;
-            $url = $this->generateBaseUrl($actionItem);
-            $url .= sprintf('?SynoToken=%s', $this->getSynologyToken());
-
-            $parameters['api'] = $actionItem->getApi();
-            $parameters['version'] = (string) $actionItem->getVersion();
-            $parameters['method'] = $actionItem->getMethod();
-
-            if (array_key_exists('filename', $parameters) && file_exists($parameters['filename'])) {
-                $parameters['filename'] = fopen($parameters['filename'], 'r');
-            }
-
-            $requestParameter = array_merge_recursive($requestParameter, [
-                'headers' => [
-                    'Content-Type' => 'multipart/form-data',
-                ],
-                'body' => array_reverse($parameters),
-            ]);
-        }
-
-        $response = $this->client->request(strtoupper($method), $url, $requestParameter);
+        $url = $this->getUrl($actionItem, $parameters);
+        $response = $this->client->request(strtoupper($url->getMethod()), $url->getUrl(), $url->getParameters());
         if ($response->getStatusCode() !== 200) {
             throw new \RuntimeException(sprintf('Request failed with HTTP status code %d', $response->getStatusCode()));
         }
@@ -221,5 +189,43 @@ final class Client
     {
         $this->setSessionId(null);
         $this->setSynologyToken(null);
+    }
+
+    public function getUrl(AbstractActionItem $actionItem, array $parameters): Url
+    {
+        $url = $this->generateUrl($actionItem, $parameters);
+
+        $method = Request::METHOD_GET;
+        $requestParameter = array_filter([
+            'headers' => [
+                'Referer' => $this->referer,
+                'Cookie' => sprintf('id=%s', $this->getSessionId()),
+            ],
+            'timeout' => 10,
+            'max_duration' => 10,
+        ]);
+
+        if ($actionItem->isMultipartForm()) {
+            $method = Request::METHOD_POST;
+            $url = $this->generateBaseUrl($actionItem);
+            $url .= sprintf('?SynoToken=%s', $this->getSynologyToken());
+
+            $parameters['api'] = $actionItem->getApi();
+            $parameters['version'] = (string)$actionItem->getVersion();
+            $parameters['method'] = $actionItem->getMethod();
+
+            if (array_key_exists('filename', $parameters) && file_exists($parameters['filename'])) {
+                $parameters['filename'] = fopen($parameters['filename'], 'r');
+            }
+
+            $requestParameter = array_merge_recursive($requestParameter, [
+                'headers' => [
+                    'Content-Type' => 'multipart/form-data',
+                ],
+                'body' => array_reverse($parameters),
+            ]);
+        }
+
+       return new Url($url, $method, $requestParameter);
     }
 }

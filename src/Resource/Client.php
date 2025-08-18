@@ -54,13 +54,13 @@ final class Client
             throw new \RuntimeException(
                 sprintf(
                     "[%s] [%s] [%s] [%s] failed with error %s %s\n\n%s",
-                    $method,
+                    $url->getMethod(),
                     $actionItem->getApi(),
                     $actionItem->getMethod(),
                     $actionItem->getVersion(),
                     $errorCode,
                     $this->getErrorLabel($errorCode, $actionItem),
-                    $url,
+                    $url->getUrl(),
                 ),
             );
         }

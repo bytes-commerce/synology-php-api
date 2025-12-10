@@ -7,6 +7,7 @@ namespace BytesCommerce\SynologyApi\Resource;
 use BytesCommerce\SynologyApi\Exceptions\NoConnectionException;
 use Symfony\Component\Cache\Adapter\FilesystemAdapter;
 use Symfony\Contracts\Cache\ItemInterface;
+use Throwable;
 use Webmozart\Assert\Assert;
 
 final class EndpointProvider
@@ -51,7 +52,7 @@ final class EndpointProvider
                 try {
                     Assert::string($response);
                 } catch (Throwable $e) {
-                    throw new NoConnectionException();
+                    throw new NoConnectionException($e->getMessage());
                 }
 
                 $result = json_decode($response, true);
